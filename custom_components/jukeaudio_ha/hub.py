@@ -15,7 +15,8 @@ from jukeaudio.jukeaudio import (
     get_inputs,
     get_input_config,
     get_available_inputs,
-    set_zone_volume
+    set_zone_volume,
+    set_input_type
 )
 from .const import DOMAIN, LOGGER
 
@@ -100,7 +101,9 @@ class JukeAudioHub:
     
     async def set_zone_volume(self,zone_id: str, volume: int):
         """Set zone volume"""
-        return await set_zone_volume(self._ip_address, self._username, self._password, zone_id, volume)
+        return await set_zone_volume(
+            self._ip_address, self._username, self._password, zone_id, volume
+        )
 
     async def _get_input_ids(self):
         """Get inputs"""
@@ -117,6 +120,12 @@ class JukeAudioHub:
         """Get available inputs"""
         return await get_available_inputs(
             self._ip_address, self._username, self._password, input_id
+        )
+    
+    async def set_input_type(self, input_id: str, type: str):
+        """Set input type"""
+        return await set_input_type(
+            self._ip_address, self._username, self._password, input_id, type
         )
 
     def _init_juke(self):
