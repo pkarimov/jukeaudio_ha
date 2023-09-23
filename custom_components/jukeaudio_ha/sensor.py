@@ -40,11 +40,6 @@ async def async_setup_entry(
     entities.append(DiskUsage(hub, coordinator, config_entry))
     entities.append(RamUsage(hub, coordinator, config_entry))
 
-    for i in hub.inputs:
-        entities.append(
-            Input(hub, coordinator, config_entry, hub.inputs[i]["input_id"])
-        )
-
     if entities:
         async_add_entities(entities)
 
@@ -220,31 +215,3 @@ class RamUsage(JukeAudioSensorBase):
     @property
     def name(self) -> str:
         return "RAM Usage"
-
-
-class Input(JukeAudioSensorBase):
-    """Input sensor"""
-
-    device_class = SensorDeviceClass.ENUM
-    icon = "mdi:audio-input-stereo-minijack"
-
-    def __init__(self, hub: JukeAudioHub, coordinator, config_entry, input_id) -> None:
-        """Initialize the sensor."""
-        super().__init__(hub, coordinator, config_entry)
-        self._input_id = input_id
-
-    @property
-    def unique_id(self) -> str:
-        return f"input_{self._input_id}"
-
-    @property
-    def native_value(self):
-        return self._hub.inputs[self._input_id]["type"]
-
-    @property
-    def name(self) -> str:
-        return f"{self._hub.inputs[self._input_id]['name']} Input"
-
-    @property
-    def options(self):
-        return self._hub.inputs[self._input_id]["available_inputs"]
