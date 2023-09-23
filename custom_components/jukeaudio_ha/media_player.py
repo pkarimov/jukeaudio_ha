@@ -118,6 +118,8 @@ class Zone(JukeAudioMediaPlayerBase):
 
     async def async_set_volume_level(self, volume):
         """Set volume level, range 0..1."""
+        LOGGER.debug("Setting volume to %s for zone %s", volume, self._zone_id)
+        await self._hub.set_zone_volume(self._zone_id, int(volume*100))
         await self.async_update()
 
     async def async_select_source(self, source: str):
