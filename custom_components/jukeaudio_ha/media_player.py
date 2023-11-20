@@ -106,7 +106,7 @@ class Zone(JukeAudioMediaPlayerBase):
     def source(self) -> str:
         """Currently selected input source"""
         zone_inputs = self._hub.zones[self._zone_id]["input"]
-        if len(zone_inputs) > 0:
+        if len(zone_inputs) > 0 and zone_inputs[0] in self._hub.inputs:
             return self._hub.inputs[zone_inputs[0]]["name"]
 
         return "None"
