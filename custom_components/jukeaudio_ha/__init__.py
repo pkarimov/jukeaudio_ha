@@ -75,7 +75,7 @@ class JukeUpdateCoordinator(DataUpdateCoordinator):
         try:
             # Note: asyncio.TimeoutError and aiohttp.ClientError are already
             # handled by the data update coordinator.
-            async with async_timeout.timeout(10):
+            async with async_timeout.timeout(60):
                 return await self._hub.fetch_data()
         except AuthenticationException as err:
             # Raising ConfigEntryAuthFailed will cancel future updates
