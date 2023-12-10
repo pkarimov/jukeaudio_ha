@@ -2,22 +2,9 @@
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 
-from jukeaudio.jukeaudio import (
-    can_connect_to_juke,
-    get_devices,
-    get_device_connection_info,
-    get_device_attributes,
-    get_device_config,
-    get_device_metrics,
-    get_zones,
-    get_zone_config,
-    set_zone_input,
-    get_inputs,
-    get_input_config,
-    get_available_inputs,
-    set_zone_volume,
-    set_input_type
-)
+from jukeaudio.jukeaudio import JukeAudioClient
+from jukeaudio.jukeaudio_v3 import JukeAudioClientV3
+
 from .const import DOMAIN, LOGGER
 
 
@@ -43,88 +30,107 @@ class JukeAudioHub:
         self.zones = {}
         self._input_ids = []
         self.inputs = {}
+        self.client = None
+        self.useV3 = False
 
     async def verify_connection(self) -> bool:
         """Test if we can connect to the host."""
-        return await can_connect_to_juke(self._ip_address)
+        client = JukeAudioClientV3()
+        if await client.can_connect_to_juke(self._ip_address):
+            self.client = client
+            self.useV3 = True
+            return True
+        else:
+            self.client = JukeAudioClient()
+            return self.client.can_connect_to_juke(self._ip_address)
 
     async def get_devices(self):
         """Test if we can authenticate to the host."""
-        return await get_devices(self._ip_address, self._username, self._password)
+        return await self.client.get_devices(self._ip_address, self._username, self._password)
 
     async def initialize(self):
         """Initialize hub"""
-        self._devices = await get_devices(
+        self._devices = await self.client.get_devices(
             self._ip_address, self._username, self._password
         )
 
     async def get_connection_info(self):
         """Get connection info"""
-        return await get_device_connection_info(
+        return await self.client.get_device_connection_info(
             self._ip_address, self._username, self._password, self._devices[0]
         )
 
     async def _get_device_attributes(self):
         """Get device attributes"""
-        return await get_device_attributes(
+        return await self.client.get_device_attributes(
             self._ip_address, self._username, self._password, self._devices[0]
         )
 
     async def _get_device_config(self):
         """Get device config"""
-        return await get_device_config(
+        return await self.client.get_device_config(
             self._ip_address, self._username, self._password, self._devices[0]
         )
 
     async def get_device_metrics(self):
         """Get device metrics"""
-        return await get_device_metrics(
+        return await self.client.get_device_metrics(
             self._ip_address, self._username, self._password, self._devices[0]
         )
 
     async def _get_zones_ids(self):
         """Get zones"""
-        zones = await get_zones(self._ip_address, self._username, self._password)
+        zones = await self.client.get_zones(self._ip_address, self._username, self._password)
         return zones["zone_ids"]
+    
+    async def _get_zones_info(self):
+        """Get zones"""
+        zones = await self.client.get_zones_info(self._ip_address, self._username, self._password)
+        return zones
 
     async def _get_zone_config(self, zone_id: str):
         """Get zone config"""
-        return await get_zone_config(
+        return await self.client.get_zone_config(
             self._ip_address, self._username, self._password, zone_id
         )
 
     async def set_zone_input(self, zone_id: str, input):
         """Set zone inputs"""
-        return await set_zone_input(
+        return await self.client.set_zone_input(
             self._ip_address, self._username, self._password, zone_id, input
         )
     
     async def set_zone_volume(self,zone_id: str, volume: int):
         """Set zone volume"""
-        return await set_zone_volume(
+        return await self.client.set_zone_volume(
             self._ip_address, self._username, self._password, zone_id, volume
         )
 
     async def _get_input_ids(self):
         """Get inputs"""
-        inputs = await get_inputs(self._ip_address, self._username, self._password)
+        inputs = await self.client.get_inputs(self._ip_address, self._username, self._password)
         return inputs["input_ids"]
+    
+    async def _get_input_info(self):
+        """Get inputs"""
+        inputs = await self.client.get_inputs_info(self._ip_address, self._username, self._password)
+        return inputs
 
     async def _get_input_config(self, input_id: str):
         """Get input config"""
-        return await get_input_config(
+        return await self.client.get_input_config(
             self._ip_address, self._username, self._password, input_id
         )
 
     async def _get_available_inputs(self, input_id: str):
         """Get available inputs"""
-        return await get_available_inputs(
+        return await self.client.get_available_inputs(
             self._ip_address, self._username, self._password, input_id
         )
     
     async def set_input_type(self, input_id: str, type: str):
         """Set input type"""
-        return await set_input_type(
+        return await self.client.set_input_type(
             self._ip_address, self._username, self._password, input_id, type
         )
 
@@ -133,6 +139,18 @@ class JukeAudioHub:
         self.juke = JukeAudioDevice(self)
 
     async def fetch_data(self):
+        if self.client is None:
+            can_connect = await self.verify_connection()
+            if not can_connect:
+                LOGGER.error("Could not connect to Juke Audio")
+                return
+
+        if self.useV3:
+            return await self._fetch_data_v3()
+        
+        return await self._fetch_data()
+
+    async def _fetch_data(self):
         """Get the data from Juke"""
         self.device_attributes = await self._get_device_attributes()
         LOGGER.debug("Juke device attributes: %s", self.device_attributes)
@@ -156,9 +174,30 @@ class JukeAudioHub:
 
         for iid in self._input_ids:
             self.inputs[iid] = await self._get_input_config(iid)
-            self.inputs[iid]["available_inputs"] = await self._get_available_inputs(iid)
+            self.inputs[iid]["available_types"] = await self._get_available_inputs(iid)
             LOGGER.debug("Juke input config for %s: %s", iid, self.inputs[iid])
 
+    async def _fetch_data_v3(self):
+        """Get the data from Juke"""
+        self.device_attributes = await self._get_device_attributes()
+        LOGGER.debug("Juke device attributes: %s", self.device_attributes)
+
+        self.device_config = await self._get_device_config()
+        LOGGER.debug("Juke device config: %s", self.device_config)
+
+        if self.juke is None:
+            self._init_juke()
+        await self.juke.fetch_data()
+
+        zones = await self._get_zones_info()
+        LOGGER.debug("Juke zone info: %s", zones)
+        for z in zones:
+            self.zones[z["zone_id"]] = z
+
+        inputs = await self._get_input_info()
+        LOGGER.debug("Juke input input: %s", inputs)
+        for i in inputs:
+            self.inputs[i["input_id"]] = i
 
 class JukeAudioDevice:
     """HA device for Juke Audio"""

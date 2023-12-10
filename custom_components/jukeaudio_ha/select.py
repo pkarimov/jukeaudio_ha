@@ -25,10 +25,17 @@ async def async_setup_entry(
 
     entities = []
 
-    for i in hub.inputs:
-        entities.append(
-            Input(hub, coordinator, config_entry, hub.inputs[i]["input_id"])
-        )
+    if hub.useV3:
+        for i in hub.inputs:
+            if hub.inputs[i]["input_class"] == 0:
+                entities.append(
+                    Input(hub, coordinator, config_entry, hub.inputs[i]["input_id"])
+                )
+    else:
+        for i in hub.inputs:
+            entities.append(
+                Input(hub, coordinator, config_entry, hub.inputs[i]["input_id"])
+            )
 
     if entities:
         async_add_entities(entities)
@@ -60,7 +67,10 @@ class Input(CoordinatorEntity, SelectEntity):
 
     @property
     def current_option(self):
-        return self._hub.inputs[self._input_id]["type"]
+        if self._hub.useV3:
+            return self._hub.inputs[self._input_id]["input_type"]
+        else:
+            return self._hub.inputs[self._input_id]["type"]
 
     @property
     def name(self) -> str:
@@ -68,8 +78,12 @@ class Input(CoordinatorEntity, SelectEntity):
 
     @property
     def options(self):
-        opts = self._hub.inputs[self._input_id]["available_inputs"]
-        current_opt = self._hub.inputs[self._input_id]["type"]
+        opts = self._hub.inputs[self._input_id]["available_types"]
+
+        if self._hub.useV3:
+            current_opt = self._hub.inputs[self._input_id]["input_type"]
+        else:
+            current_opt = self._hub.inputs[self._input_id]["type"]
 
         if current_opt not in opts:
             opts.append(current_opt)

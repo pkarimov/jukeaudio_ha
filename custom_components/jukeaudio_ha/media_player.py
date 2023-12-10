@@ -97,8 +97,14 @@ class Zone(JukeAudioMediaPlayerBase):
     def source_list(self) -> list[str]:
         """List of available input sources."""
         sources = ["None"]
-        for i in self._hub.inputs:
-            sources.append(self._hub.inputs[i]["name"])
+
+        if self._hub.useV3:
+            for i in self._hub.inputs:
+                if self._hub.inputs[i]["input_class"] == 0:
+                    sources.append(self._hub.inputs[i]["name"])
+        else:
+            for i in self._hub.inputs:
+                sources.append(self._hub.inputs[i]["name"])
 
         return sources
 
@@ -106,8 +112,14 @@ class Zone(JukeAudioMediaPlayerBase):
     def source(self) -> str:
         """Currently selected input source"""
         zone_inputs = self._hub.zones[self._zone_id]["input"]
-        if len(zone_inputs) > 0 and zone_inputs[0] in self._hub.inputs:
-            return self._hub.inputs[zone_inputs[0]]["name"]
+
+        if self._hub.useV3:
+            for input_id in zone_inputs:
+                if input_id in self._hub.inputs and self._hub.inputs[input_id]["input_class"] == 0:
+                    return self._hub.inputs[input_id]["name"]
+        else:
+            if len(zone_inputs) > 0 and zone_inputs[0] in self._hub.inputs:
+                return self._hub.inputs[zone_inputs[0]]["name"]
 
         return "None"
 
