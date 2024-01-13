@@ -2,20 +2,19 @@
     "config": {
         "abort": {
             "already_configured": "Equipamento já configurado"
-          },
-          "error": {
+        },
+        "error": {
             "cannot_connect": "Falha na ligação",
             "invalid_auth": "Falha na autenticação",
             "unknown": "Erro desconhecido"
-          },
         },
         "step": {
             "user": {
                 "data": {
-                    "host": "Host",
+                    "host": "Endereço",
                     "password": "Senha",
                     "username": "Utilizador",
-                    "scan_interval": "Intervalo de pesquisa (segundos)"
+                    "scan_interval": "Tempo de pesquisa(segundos)"
                 }
             }
         }
