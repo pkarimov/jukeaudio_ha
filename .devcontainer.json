@@ -1,6 +1,6 @@
 {
     "name": "pkarimov/jukeaudio_ha",
-    "image": "mcr.microsoft.com/vscode/devcontainers/python:0-3.10-bullseye",
+    "image": "mcr.microsoft.com/vscode/devcontainers/python:3.13",
     "postCreateCommand": "scripts/setup",
     "appPort": ["8123:8123"],
     "remoteUser": "vscode",
