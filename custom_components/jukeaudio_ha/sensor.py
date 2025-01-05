@@ -5,7 +5,6 @@ from homeassistant.components.sensor.const import SensorDeviceClass, SensorState
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-    ENTITY_CATEGORY_DIAGNOSTIC,
     UnitOfTime,
     PERCENTAGE,
 )
@@ -72,7 +71,7 @@ class SignalStrength(JukeAudioSensorBase):
     device_class = SensorDeviceClass.SIGNAL_STRENGTH
     state_class = SensorStateClass.MEASUREMENT
     native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
-    entity_category = EntityCategory(ENTITY_CATEGORY_DIAGNOSTIC)
+    entity_category = EntityCategory.DIAGNOSTIC
     icon = "mdi:signal"
 
     @property
@@ -94,7 +93,7 @@ class ConnectionType(JukeAudioSensorBase):
     """Connection Type sensor"""
 
     device_class = SensorDeviceClass.ENUM
-    entity_category = EntityCategory(ENTITY_CATEGORY_DIAGNOSTIC)
+    entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -115,7 +114,7 @@ class SSID(JukeAudioSensorBase):
     """SSID sensor"""
 
     device_class = SensorDeviceClass.ENUM
-    entity_category = EntityCategory(ENTITY_CATEGORY_DIAGNOSTIC)
+    entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -137,7 +136,7 @@ class Uptime(JukeAudioSensorBase):
 
     device_class = SensorDeviceClass.DURATION
     native_unit_of_measurement = UnitOfTime.SECONDS
-    entity_category = EntityCategory(ENTITY_CATEGORY_DIAGNOSTIC)
+    entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -158,7 +157,7 @@ class CpuUsage(JukeAudioSensorBase):
     """CPU Usage sensor"""
 
     native_unit_of_measurement = PERCENTAGE
-    entity_category = EntityCategory(ENTITY_CATEGORY_DIAGNOSTIC)
+    entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -179,7 +178,7 @@ class DiskUsage(JukeAudioSensorBase):
     """Disk Usage sensor"""
 
     native_unit_of_measurement = PERCENTAGE
-    entity_category = EntityCategory(ENTITY_CATEGORY_DIAGNOSTIC)
+    entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
@@ -200,7 +199,7 @@ class RamUsage(JukeAudioSensorBase):
     """RAM Usage sensor"""
 
     native_unit_of_measurement = PERCENTAGE
-    entity_category = EntityCategory(ENTITY_CATEGORY_DIAGNOSTIC)
+    entity_category = EntityCategory.DIAGNOSTIC
 
     @property
     def unique_id(self) -> str:
