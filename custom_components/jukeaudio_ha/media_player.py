@@ -114,11 +114,15 @@ class Zone(JukeAudioMediaPlayerBase):
 
         if self._hub.useV3:
             for i in self._hub.inputs:
-                if self._hub.inputs[i]["input_class"] == 0:
+                # Only show enabled inputs
+                if (self._hub.inputs[i]["input_class"] == 0 and 
+                    self._hub.inputs[i].get("enabled", True)):
                     sources.append(self._hub.inputs[i]["name"])
         else:
             for i in self._hub.inputs:
-                sources.append(self._hub.inputs[i]["name"])
+                # Only show enabled inputs
+                if self._hub.inputs[i].get("enabled", True):
+                    sources.append(self._hub.inputs[i]["name"])
 
         return sources
 
