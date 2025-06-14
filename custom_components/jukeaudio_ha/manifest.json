@@ -12,7 +12,7 @@
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/pkarimov/jukeaudio_ha/issues",
   "loggers": ["jukeaudio"],
-  "requirements": ["jukeaudio==0.0.9"],
+  "requirements": ["jukeaudio==0.0.10"],
   "ssdp": [],
   "version": "0.0.1",
   "zeroconf": []
