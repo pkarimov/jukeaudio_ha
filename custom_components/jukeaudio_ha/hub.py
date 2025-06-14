@@ -134,6 +134,18 @@ class JukeAudioHub:
             self._ip_address, self._username, self._password, input_id, type
         )
 
+    async def set_input_volume(self, input_id: str, volume: int):
+        """Set the volume for a specific input (0-100)."""
+        return await self.client.set_input_volume(
+            self._ip_address, self._username, self._password, input_id, volume
+        )
+
+    async def set_input_enabled(self, input_id: str, enabled: bool):
+        """Enable or disable a specific input."""
+        return await self.client.enable_input(
+            self._ip_address, self._username, self._password, input_id, enabled
+        )   
+
     def _init_juke(self):
         """Init Juke device"""
         self.juke = JukeAudioDevice(self)
