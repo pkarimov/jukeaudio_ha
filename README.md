@@ -24,7 +24,10 @@ You can install this either manually copying files or using HACS. Configuration 
 - Password: Use the same password you configured via Administrator Settings on the amplifier
 - Scan Interval: how often you want Home Assistant to fetch values from the amplifier
 
+### Requirements
+- Minimum Juke firmware version 4.2.1
+
 Usage
 =====
 
-This integration creates Media Player entities for each of the amplifier zones, Select entities for the different inputs, and diagnostic sensors for monitoring hardware and network. For each zone you can control the Juke source it is mapped to and volume. You can use the Input entities to switch between different input types supported by your Juke.
+This integration creates Media Player entities for each of the amplifier zones and inputs, and diagnostic sensors for monitoring hardware and network. For each zone you can control the Juke source it is mapped to and volume. You can use the Input entities to switch between different input types supported by your Juke.

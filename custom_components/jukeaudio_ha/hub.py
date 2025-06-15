@@ -2,7 +2,6 @@
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 
-from jukeaudio.jukeaudio import JukeAudioClient
 from jukeaudio.jukeaudio_v3 import JukeAudioClientV3
 
 from .const import DOMAIN, LOGGER
@@ -22,27 +21,18 @@ class JukeAudioHub:
         self._ip_address = ip_address
         self._username = username
         self._password = password
-        self._devices = []
-        self.juke = None
-        self.device_attributes = None
-        self.device_config = None
-        self._zones_ids = []
-        self.zones = {}
-        self._input_ids = []
-        self.inputs = {}
+        self.jukes = {}
         self.client = None
-        self.useV3 = False
+        self._server_device_id = None
 
     async def verify_connection(self) -> bool:
         """Test if we can connect to the host."""
         client = JukeAudioClientV3()
         if await client.can_connect_to_juke(self._ip_address):
             self.client = client
-            self.useV3 = True
             return True
         else:
-            self.client = JukeAudioClient()
-            return self.client.can_connect_to_juke(self._ip_address)
+            return False
 
     async def get_devices(self):
         """Test if we can authenticate to the host."""
@@ -50,32 +40,19 @@ class JukeAudioHub:
 
     async def initialize(self):
         """Initialize hub"""
-        self._devices = await self.client.get_devices(
-            self._ip_address, self._username, self._password
-        )
+        self._server_device_id = await self.client.get_server_device_id(
+            self._ip_address, self._username, self._password)
 
     async def get_connection_info(self):
         """Get connection info"""
         return await self.client.get_device_connection_info(
-            self._ip_address, self._username, self._password, self._devices[0]
+            self._ip_address, self._username, self._password, self._server_device_id
         )
 
-    async def _get_device_attributes(self):
-        """Get device attributes"""
-        return await self.client.get_device_attributes(
-            self._ip_address, self._username, self._password, self._devices[0]
-        )
-
-    async def _get_device_config(self):
-        """Get device config"""
-        return await self.client.get_device_config(
-            self._ip_address, self._username, self._password, self._devices[0]
-        )
-
-    async def get_device_metrics(self):
-        """Get device metrics"""
-        return await self.client.get_device_metrics(
-            self._ip_address, self._username, self._password, self._devices[0]
+    async def _get_devices_info(self):
+        """Get devices info"""
+        return await self.client.get_devices_info(
+            self._ip_address, self._username, self._password
         )
 
     async def _get_zones_ids(self):
@@ -146,10 +123,6 @@ class JukeAudioHub:
             self._ip_address, self._username, self._password, input_id, enabled
         )   
 
-    def _init_juke(self):
-        """Init Juke device"""
-        self.juke = JukeAudioDevice(self)
-
     async def fetch_data(self):
         if self.client is None:
             can_connect = await self.verify_connection()
@@ -157,87 +130,67 @@ class JukeAudioHub:
                 LOGGER.error("Could not connect to Juke Audio")
                 return
 
-        if self.useV3:
-            return await self._fetch_data_v3()
-        
-        return await self._fetch_data()
-
-    async def _fetch_data(self):
-        """Get the data from Juke"""
-        self.device_attributes = await self._get_device_attributes()
-        LOGGER.debug("Juke device attributes: %s", self.device_attributes)
-
-        self.device_config = await self._get_device_config()
-        LOGGER.debug("Juke device config: %s", self.device_config)
-
-        if self.juke is None:
-            self._init_juke()
-        await self.juke.fetch_data()
-
-        self._zones_ids = await self._get_zones_ids()
-        LOGGER.debug("Juke zone ids: %s", self._zones_ids)
-
-        for zid in self._zones_ids:
-            self.zones[zid] = await self._get_zone_config(zid)
-            LOGGER.debug("Juke zone config for %s: %s", zid, self.zones[zid])
-
-        self._input_ids = await self._get_input_ids()
-        LOGGER.debug("Juke input ids: %s", self._input_ids)
-
-        for iid in self._input_ids:
-            self.inputs[iid] = await self._get_input_config(iid)
-            self.inputs[iid]["available_types"] = await self._get_available_inputs(iid)
-            LOGGER.debug("Juke input config for %s: %s", iid, self.inputs[iid])
+        return await self._fetch_data_v3()
 
     async def _fetch_data_v3(self):
         """Get the data from Juke"""
-        self.device_attributes = await self._get_device_attributes()
-        LOGGER.debug("Juke device attributes: %s", self.device_attributes)
+        devices = await self._get_devices_info()
+        LOGGER.debug("Juke devices info: %s", devices)
 
-        self.device_config = await self._get_device_config()
-        LOGGER.debug("Juke device config: %s", self.device_config)
-
-        if self.juke is None:
-            self._init_juke()
-        await self.juke.fetch_data()
+        for device in devices:
+            if self.jukes.get(device["device_id"]) is None:
+                self.jukes[device["device_id"]] = JukeAudioDevice(self)
+                LOGGER.debug("Initialized JukeAudioDevice for %s", device["device_id"])
+            
+            self.jukes[device["device_id"]].update(device)
 
         zones = await self._get_zones_info()
         LOGGER.debug("Juke zone info: %s", zones)
+
         for z in zones:
-            self.zones[z["zone_id"]] = z
+            zone_id_parts = z["zone_id"].split("-")
+            zone_device_id = zone_id_parts[0]+"-"+zone_id_parts[1]
+            if self.jukes.get(zone_device_id) is not None:
+                juke = self.jukes[zone_device_id]
+                juke.zones[z["zone_id"]] = z
 
         inputs = await self._get_input_info()
-        LOGGER.debug("Juke input input: %s", inputs)
+        LOGGER.debug("Juke input info: %s", inputs)
+
         for i in inputs:
-            self.inputs[i["input_id"]] = i
+            input_id_parts = i["input_id"].split("-")
+            input_device_id = input_id_parts[0]+"-"+input_id_parts[1]
+            if self.jukes.get(input_device_id) is not None:
+                juke = self.jukes[input_device_id]
+                juke.inputs[i["input_id"]] = i
 
 class JukeAudioDevice:
     """HA device for Juke Audio"""
 
+    def update(self, device_info) -> None:
+        """Update device information"""
+        self._device_id = device_info["device_id"]
+        self.config = device_info["config"]
+        self.connection_info = device_info["connection"]
+        self.device_metrics = device_info["metrics"]
+        self.device_attributes = device_info["attributes"]
+        self.uid_base = self.device_attributes["serial_number"]
+        self.zones = {}
+        self.inputs = {}
+
     def __init__(self, hub: JukeAudioHub) -> None:
         self.hub = hub
-        self.config = self.hub.device_config
-        self.uid_base = self.hub.device_attributes["serial_number"]
-        self.connection_info = None
-        self.device_metrics = None
 
     @property
     def device_info(self) -> DeviceInfo:
         """Return device info"""
         name = self.config["name"]
         if name is None or name == "":
-            name = self.hub.device_attributes["device_id"]
+            name = self.device_attributes["device_id"]
 
         return {
-            "identifiers": {(DOMAIN, f"{self.hub.device_attributes['serial_number']}")},
+            "identifiers": {(DOMAIN, f"{self.device_attributes['serial_number']}")},
             "name": name,
             "manufacturer": "Juke Audio",
-            "sw_version": self.hub.device_attributes["firmware_version"],
+            "sw_version": self.device_attributes["firmware_version"],
         }
-
-    async def fetch_data(self):
-        """Fetch data from the Juke"""
-        self.connection_info = await self.hub.get_connection_info()
-        LOGGER.debug("Juke device connection info: %s", self.connection_info)
-        self.device_metrics = await self.hub.get_device_metrics()
-        LOGGER.debug("Juke device metrics: %s", self.device_metrics)
