@@ -90,9 +90,87 @@ class Zone(JukeAudioMediaPlayerBase):
         return f'{self._hub.zones[self._zone_id]["name"]} Zone'
 
     @property
+    def extra_state_attributes(self):
+        """Return additional attributes for the zone."""
+        attributes = {}
+        
+        zone_data = self._hub.zones[self._zone_id]
+        
+        # Add warning messages as attributes if present
+        if "warnings" in zone_data and zone_data["warnings"]:
+            attributes["warnings"] = zone_data["warnings"]
+            attributes["warning_count"] = len(zone_data["warnings"])
+            
+        return attributes
+    
+    @property
     def state(self) -> MediaPlayerState | None:
         """State of the player."""
-        return MediaPlayerState.ON
+        # Check if there's an active input for this zone
+        zone_data = self._hub.zones[self._zone_id]
+        
+        # If zone has an active_input that's not None, it's playing
+        if "active_input" in zone_data and zone_data["active_input"] is not None:
+            return MediaPlayerState.PLAYING
+        
+        # No active input but zone is on
+        if zone_data.get("enabled", True):
+            return MediaPlayerState.ON
+            
+        # Zone is disabled
+        return MediaPlayerState.OFF
+        
+    @property
+    def media_title(self) -> str | None:
+        """Title of current playing media."""
+        zone_data = self._hub.zones[self._zone_id]
+        
+        # Only provide title if we're playing
+        if "active_input" in zone_data and zone_data["active_input"] is not None:
+            active_input_id = zone_data["active_input"]
+            
+            # Get the name of the active input
+            if active_input_id in self._hub.inputs:
+                input_data = self._hub.inputs[active_input_id]
+                
+                # Only use input name if input class is 0
+                if self._hub.useV3 and input_data.get("input_class") == 0:
+                    input_name = input_data.get("name")
+                    if input_name:
+                        return f"Playing from {input_name}"
+                elif not self._hub.useV3:  # For non-V3, use input name directly
+                    input_name = input_data.get("name")
+                    if input_name:
+                        return f"Playing from {input_name}"
+                
+                # If we can't use the name, fall back to type
+                input_type = input_data.get("input_type" if self._hub.useV3 else "type", "Unknown")
+                return f"Playing from {input_type}"
+                
+        return None
+    
+    @property
+    def media_artist(self) -> str | None:
+        """Artist of current playing media."""
+        # If there's additional metadata available from the active input
+        # you could return it here
+        return None
+    
+    @property 
+    def icon(self) -> str | None:
+        zone_data = self._hub.zones[self._zone_id]
+        
+        # Show warning icon if there are warnings
+        if "warnings" in zone_data and zone_data["warnings"]:
+            return "mdi:speaker-message"
+        
+        """Return dynamic icon based on playing state."""
+        if self.state == MediaPlayerState.PLAYING:
+            return "mdi:speaker-play"
+        elif self.state == MediaPlayerState.ON:
+            return "mdi:speaker"
+        else:
+            return "mdi:speaker-off"
 
     @property
     def supported_features(self) -> MediaPlayerEntityFeature:
