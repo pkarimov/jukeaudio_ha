@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .hub import JukeAudioHub
+from .hub import JukeAudioHub, JukeAudioDevice
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,13 +31,15 @@ async def async_setup_entry(
 
     entities = []
 
-    entities.append(SignalStrength(hub, coordinator, config_entry))
-    entities.append(ConnectionType(hub, coordinator, config_entry))
-    entities.append(SSID(hub, coordinator, config_entry))
-    entities.append(Uptime(hub, coordinator, config_entry))
-    entities.append(CpuUsage(hub, coordinator, config_entry))
-    entities.append(DiskUsage(hub, coordinator, config_entry))
-    entities.append(RamUsage(hub, coordinator, config_entry))
+    for juke_id in hub.jukes:
+        juke = hub.jukes[juke_id]
+        entities.append(SignalStrength(juke, coordinator, config_entry))
+        entities.append(ConnectionType(juke, coordinator, config_entry))
+        entities.append(SSID(juke, coordinator, config_entry))
+        entities.append(Uptime(juke, coordinator, config_entry))
+        entities.append(CpuUsage(juke, coordinator, config_entry))
+        entities.append(DiskUsage(juke, coordinator, config_entry))
+        entities.append(RamUsage(juke, coordinator, config_entry))
 
     if entities:
         async_add_entities(entities)
@@ -48,17 +50,17 @@ class JukeAudioSensorBase(CoordinatorEntity, SensorEntity):
 
     _attr_has_entity_name = True
 
-    def __init__(self, hub: JukeAudioHub, coordinator, config_entry) -> None:
+    def __init__(self, juke: JukeAudioDevice, coordinator, config_entry) -> None:
         """Initialize the sensor."""
         super().__init__(
             coordinator,
         )
-        self._hub = hub
+        self._juke = juke
         self._config_entry = config_entry
 
     @property
     def device_info(self) -> DeviceInfo:
-        return self._hub.juke.device_info
+        return self._juke.device_info
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -76,13 +78,13 @@ class SignalStrength(JukeAudioSensorBase):
 
     @property
     def unique_id(self) -> str:
-        return f"{self._hub.juke.uid_base}_signal_strength"
+        return f"{self._juke.uid_base}_signal_strength"
 
     @property
     def native_value(self):
-        if self._hub.juke.connection_info is None:
+        if self._juke.connection_info is None:
             return None
-        return self._hub.juke.connection_info["signal_strength"]
+        return self._juke.connection_info["signal_strength"]
 
     @property
     def name(self) -> str:
@@ -97,13 +99,13 @@ class ConnectionType(JukeAudioSensorBase):
 
     @property
     def unique_id(self) -> str:
-        return f"{self._hub.juke.uid_base}_connection_type"
+        return f"{self._juke.uid_base}_connection_type"
 
     @property
     def native_value(self):
-        if self._hub.juke.connection_info is None:
+        if self._juke.connection_info is None:
             return None
-        return self._hub.juke.connection_info["type"]
+        return self._juke.connection_info["type"]
 
     @property
     def name(self) -> str:
@@ -118,13 +120,13 @@ class SSID(JukeAudioSensorBase):
 
     @property
     def unique_id(self) -> str:
-        return f"{self._hub.juke.uid_base}_ssid"
+        return f"{self._juke.uid_base}_ssid"
 
     @property
     def native_value(self):
-        if self._hub.juke.connection_info is None:
+        if self._juke.connection_info is None:
             return None
-        return self._hub.juke.connection_info["ssid"]
+        return self._juke.connection_info["ssid"]
 
     @property
     def name(self) -> str:
@@ -140,13 +142,13 @@ class Uptime(JukeAudioSensorBase):
 
     @property
     def unique_id(self) -> str:
-        return f"{self._hub.juke.uid_base}_uptime"
+        return f"{self._juke.uid_base}_uptime"
 
     @property
     def native_value(self):
-        if self._hub.juke.connection_info is None:
+        if self._juke.connection_info is None:
             return None
-        return self._hub.juke.connection_info["uptime"]
+        return self._juke.connection_info["uptime"]
 
     @property
     def name(self) -> str:
@@ -161,13 +163,13 @@ class CpuUsage(JukeAudioSensorBase):
 
     @property
     def unique_id(self) -> str:
-        return f"{self._hub.juke.uid_base}_cpu_usage"
+        return f"{self._juke.uid_base}_cpu_usage"
 
     @property
     def native_value(self):
-        if self._hub.juke.device_metrics is None:
+        if self._juke.device_metrics is None:
             return None
-        return self._hub.juke.device_metrics["cpu_usage"]
+        return self._juke.device_metrics["cpu_usage"]
 
     @property
     def name(self) -> str:
@@ -182,13 +184,13 @@ class DiskUsage(JukeAudioSensorBase):
 
     @property
     def unique_id(self) -> str:
-        return f"{self._hub.juke.uid_base}_disk_usage"
+        return f"{self._juke.uid_base}_disk_usage"
 
     @property
     def native_value(self):
-        if self._hub.juke.device_metrics is None:
+        if self._juke.device_metrics is None:
             return None
-        return self._hub.juke.device_metrics["disk_usage"]
+        return self._juke.device_metrics["disk_usage"]
 
     @property
     def name(self) -> str:
@@ -203,13 +205,13 @@ class RamUsage(JukeAudioSensorBase):
 
     @property
     def unique_id(self) -> str:
-        return f"{self._hub.juke.uid_base}_ram_usage"
+        return f"{self._juke.uid_base}_ram_usage"
 
     @property
     def native_value(self):
-        if self._hub.juke.device_metrics is None:
+        if self._juke.device_metrics is None:
             return None
-        return self._hub.juke.device_metrics["ram_usage"]
+        return self._juke.device_metrics["ram_usage"]
 
     @property
     def name(self) -> str:
