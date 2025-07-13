@@ -22,6 +22,7 @@ class JukeAudioHub:
         self._username = username
         self._password = password
         self.jukes = {}
+        self.group_inputs = {}
         self.client = None
         self._server_device_id = None
 
@@ -163,6 +164,9 @@ class JukeAudioHub:
             if self.jukes.get(input_device_id) is not None:
                 juke = self.jukes[input_device_id]
                 juke.inputs[i["input_id"]] = i
+
+            if i["input_class"] == 0:
+                self.group_inputs[i["input_id"]] = i
 
 class JukeAudioDevice:
     """HA device for Juke Audio"""

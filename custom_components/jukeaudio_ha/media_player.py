@@ -183,11 +183,10 @@ class Zone(JukeAudioMediaPlayerBase):
         """List of available input sources."""
         sources = ["None"]
 
-        for i in self._juke.inputs:
-            # Only show enabled inputs
-            if (self._juke.inputs[i]["input_class"] == 0 and 
-                self._juke.inputs[i].get("enabled", True)):
-                sources.append(self._juke.inputs[i]["name"])
+        for i in self._juke.hub.group_inputs:
+                input = self._juke.hub.group_inputs[i]
+                if input.get("enabled", True):
+                    sources.append(input["name"])
 
         return sources
 
@@ -197,8 +196,8 @@ class Zone(JukeAudioMediaPlayerBase):
         zone_inputs = self._juke.zones[self._zone_id]["input"]
 
         for input_id in zone_inputs:
-            if input_id in self._juke.inputs and self._juke.inputs[input_id]["input_class"] == 0:
-                return self._juke.inputs[input_id]["name"]
+            if input_id in self._juke.hub.group_inputs:
+                return self._juke.hub.group_inputs[input_id]["name"]
 
         return "None"
 
@@ -217,10 +216,13 @@ class Zone(JukeAudioMediaPlayerBase):
         """Select input source."""
 
         input_id = None
-        for i in self._juke.inputs:
-            if self._juke.inputs[i]["name"] == source:
-                input_id = self._juke.inputs[i]["input_id"]
+
+        for i in self._juke.hub.group_inputs:
+            input = self._juke.hub.group_inputs[i]
+            if input["name"] == source:
+                input_id = i
                 break
+
 
         LOGGER.debug("Setting input to %s for zone %s", input_id, self._zone_id)
         await self._juke.hub.set_zone_input(self._zone_id, input_id)
