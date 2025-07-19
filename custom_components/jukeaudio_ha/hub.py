@@ -190,7 +190,7 @@ class JukeAudioDevice:
         """Return device info"""
         name = self.config["name"]
         if name is None or name == "":
-            name = self.device_attributes["device_id"]
+            name = self._device_id
 
         return {
             "identifiers": {(DOMAIN, f"{self.device_attributes['serial_number']}")},
